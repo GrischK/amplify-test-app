@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  background: linear-gradient(180deg, rgb(117, 81, 194), rgb(255, 255, 255));
+  background: linear-gradient(180deg, rgb(81, 194, 117), rgb(255, 255, 255));
   display: flex;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   height: 100vh;
@@ -28,7 +28,7 @@ button {
   color: white;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #42d76e;
 }
 button:focus,
 button:focus-visible {
@@ -56,7 +56,7 @@ li {
 }
 
 li:hover {
-  background: #dadbf9;
+  background: #f1fcf3;
 }
 
 a {
