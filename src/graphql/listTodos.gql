@@ -1,0 +1,16 @@
+query MyQuery {
+    listTodos {
+        items {
+            id
+            content
+            isDone
+            tags {
+                items {
+                    tag {
+                        name
+                    }
+                }
+            }
+        }
+    }
+}
