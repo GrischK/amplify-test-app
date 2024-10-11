@@ -1,7 +1,6 @@
 import {useEffect, useState} from "react";
 import type {Schema} from "../amplify/data/resource";
 import {generateClient} from "aws-amplify/data";
-import {cli} from "aws-cdk/lib";
 
 const client = generateClient<Schema>();
 
@@ -44,8 +43,8 @@ function App() {
                         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                             <button onClick={() => deleteTodo(todo.id)}>Delete</button>
                             <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
-                            <input type="checkbox" checked={todo.isDone ? todo.isDone : false}
-                                   onChange={() => updateTodoIsDone(todo.id, todo.isDone)}
+                            <input type="checkbox" checked={todo.isDone ?? false}
+                                   onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
                             />
                         </div>
                     </li>
