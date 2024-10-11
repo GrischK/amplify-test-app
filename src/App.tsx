@@ -21,6 +21,13 @@ function App() {
         client.models.Todo.delete({id})
     }
 
+    function updateTodo(id: string, currentContent: string) {
+        const updatedContent = window.prompt("Update Todo content", currentContent);
+        if (updatedContent) {
+            client.models.Todo.update({ id, content: updatedContent });
+        }
+    }
+
     return (
         <main>
             <h1>My todos</h1>
@@ -29,7 +36,11 @@ function App() {
                 {todos.map((todo) => (
                     <li key={todo.id}
                         style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>{todo.content}
-                        <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                        <div style={{display: 'flex', alignItems: 'center', gap:'12px'}}>
+                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                            <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
+                        </div>
+
                     </li>
                 ))}
             </ul>
