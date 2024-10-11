@@ -11,13 +11,13 @@ const schema = a.schema({
         .model({
             content: a.string(),
             isDone: a.boolean().default(false),
-            tags: a.hasMany('PostTag', 'todoId')
+            tags: a.hasMany('TodoTag', 'todoId')
         })
     ,
     Tag: a
         .model({
             name: a.string(),
-            todos: a.hasMany('PostTag', 'tagId')
+            todos: a.hasMany('TodoTag', 'tagId')
         })
     ,
     TodoTag: a.model({
