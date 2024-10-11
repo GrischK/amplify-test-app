@@ -8,9 +8,13 @@ function App() {
     const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
 
     useEffect(() => {
-        client.models.Todo.observeQuery().subscribe({
+        // A chaque changement dans les données on met à jour les todos
+        const sub = client.models.Todo.observeQuery().subscribe({
             next: (data) => setTodos([...data.items]),
         });
+
+        // On se désabonne de l'observation lorsque le composant est démonté pour éviter les effets de bord
+        return () => sub.unsubscribe();
     }, []);
 
     function createTodo() {
@@ -39,13 +43,16 @@ function App() {
             <ul>
                 {todos.map((todo) => (
                     <li key={todo.id}
-                        style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>{todo.content}
-                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                            <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
+                        style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
                             <input type="checkbox" checked={todo.isDone ?? false}
                                    onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
                             />
+                            <span>{todo.content}</span>
+                        </div>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                            <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
                         </div>
                     </li>
                 ))}
