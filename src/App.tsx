@@ -8,6 +8,7 @@ function App() {
     const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
     const [tags, setTags] = useState<Array<Schema["Tag"]["type"]>>([]);
     const [displayForm, setDisplayForm] = useState<boolean>(false);
+    const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null); // État pour stocker la réponse
 
     console.log("todos ", todos)
     console.log("tags ", tags)
@@ -73,7 +74,15 @@ function App() {
         client.models.Todo.update({id, isDone: !currentIsDone})
     }
 
-    console.log(client.queries.sayHello({name:'Grischka'}))
+    useEffect(() => {
+        async function fetchSayHello() {
+            const response = await client.queries.sayHello({ name: "Grischka" });
+            setSayHelloResponse(response.data);
+        }
+
+        fetchSayHello();
+    }, []);
+
     return (
         <main>
             <h1>My todos</h1>
@@ -110,6 +119,7 @@ function App() {
                 <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
                     Review next step of this tutorial.
                 </a>
+                <div>{sayHelloResponse}</div>
             </div>
             {
                 displayForm && (
