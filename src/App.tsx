@@ -74,7 +74,6 @@ function App() {
     }
 
     console.log(client.queries.sayHello({name:'Grischka'}))
-
     return (
         <main>
             <h1>My todos</h1>
