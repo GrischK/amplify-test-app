@@ -73,6 +73,8 @@ function App() {
         client.models.Todo.update({id, isDone: !currentIsDone})
     }
 
+    console.log(client.queries.sayHello({name:'Grischka'}))
+
     return (
         <main>
             <h1>My todos</h1>
