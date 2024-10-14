@@ -8,10 +8,12 @@ function App() {
     const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
     const [tags, setTags] = useState<Array<Schema["Tag"]["type"]>>([]);
     const [displayForm, setDisplayForm] = useState<boolean>(false);
-    const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null); // État pour stocker la réponse
+    const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null);
+    const [todosWithTags, setTodosWithTags] = useState<any[]>([]);
 
     console.log("todos ", todos)
     console.log("tags ", tags)
+    console.log("todosWithTags ", todosWithTags)
 
     useEffect(() => {
         // A chaque changement dans les données on met à jour les todos
@@ -30,6 +32,28 @@ function App() {
         };
 
     }, []);
+
+    useEffect(() => {
+        async function fetchTodosWithTags() {
+            const todosWithTagsData = await Promise.all(todos.map(async (todo) => {
+                const todoTags = await client.models.TodoTag.list({filter: {todoId: {eq: todo.id}}});
+                const tagsId = todoTags.data.map((todoTag) => todoTag.tagId);
+
+                // Récupération des noms des tags associés
+                const tagsNames = await Promise.all(tagsId.map(async (id) => {
+                    const tag = await client.models.Tag.get({id: id});
+                    return tag.data?.name; // Récupération du nom du tag
+                }));
+
+                return {...todo, tagsNames};
+            }));
+
+            setTodosWithTags(todosWithTagsData);
+        }
+
+        fetchTodosWithTags();
+    }, [todos]);
+
 
     function createTodo(formData: FormData) {
         const todoData = {
@@ -60,7 +84,20 @@ function App() {
     }
 
     function deleteTodo(id: string) {
-        client.models.Todo.delete({id})
+        client.models.TodoTag.list({
+            filter: {todoId: {eq: id}}
+        }).then(({data}) => {
+            const todoTagDeletions = data.map((todoTag) => {
+                return client.models.TodoTag.delete({id: todoTag.id});
+            });
+            Promise.all(todoTagDeletions).then(() => {
+                client.models.Todo.delete({id});
+            }).catch((error) => {
+                console.error("Erreur lors de la suppression des relations TodoTag :", error);
+            });
+        }).catch((error) => {
+            console.error("Erreur lors de la récupération des relations TodoTag :", error);
+        });
     }
 
     function updateTodo(id: string, currentContent: string) {
@@ -74,38 +111,52 @@ function App() {
         client.models.Todo.update({id, isDone: !currentIsDone})
     }
 
+    function createTag() {
+        client.models.Tag.create({name: window.prompt("Tag name")});
+    }
+
     useEffect(() => {
         async function fetchSayHello() {
-            const response = await client.queries.sayHello({ name: "Grischka" });
+            const response = await client.queries.sayHello({name: "Grischka"});
             setSayHelloResponse(response.data);
         }
 
         fetchSayHello();
     }, []);
 
+
     return (
         <main>
             <h1>My todos</h1>
-            <button onClick={() => setDisplayForm(true)}>+ new</button>
+            <button onClick={() => setDisplayForm(true)}>+ new todo</button>
             <ul>
-                {todos.map((todo) => (
-                    <li key={todo.id}
-                        style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'}}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-                            <input type="checkbox" checked={todo.isDone ?? false}
-                                   onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
-                            />
-                            <span>{todo.content}</span>
-                            {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
+                {todosWithTags.map((todo) => (
+                    <li key={todo.id}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px'
+                        }}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                <input type="checkbox" checked={todo.isDone ?? false}
+                                       onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
+                                />
+                                <span>{todo.content}</span>
+                                {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
+                            </div>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                                <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
+                            </div>
                         </div>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                            <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
-                        </div>
+                        <div style={{display: 'flex', gap: '4px'}}>{todo.tagsNames.map((tag: string) => (
+                            <span style={{color: '#e43d3d', backgroundColor:'#f9dddd', padding:'2px 4px', borderRadius:'4px'}}>{tag}</span>))}</div>
                     </li>
                 ))}
             </ul>
             <h2>My tags</h2>
+            <button onClick={createTag}>+ new tag</button>
             <ul>
                 {tags.map((tag) => (
                     <li key={tag.id}>
@@ -156,7 +207,7 @@ function App() {
                                 position: "absolute",
                                 top: '5px',
                                 right: '5px',
-                                fontSize:'12px'
+                                fontSize: '12px'
                             }}
                                     onClick={() => setDisplayForm(false)}>X
                             </button>
