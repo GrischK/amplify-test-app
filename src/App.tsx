@@ -132,7 +132,7 @@ function App() {
             signUpAttributes={['email', 'preferred_username']}
             formFields={{
                 signUp: {
-                    preferred_username: {
+                    nickname: {
                         label: 'Username', // Remplace "Preferred Username" par "Username"
                         placeholder: 'Enter your username', // Personnalise le placeholder
                         isRequired: true,
