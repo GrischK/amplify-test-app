@@ -128,18 +128,7 @@ function App() {
 
 
     return (
-        <Authenticator
-            signUpAttributes={['email', 'preferred_username']}
-            formFields={{
-                signUp: {
-                    preferred_username: {
-                        label: 'Username', // Remplace "Preferred Username" par "Username"
-                        placeholder: 'Enter your username', // Personnalise le placeholder
-                        isRequired: true,
-                    }
-                }
-            }}
-        >
+        <Authenticator>
             {({signOut, user}) => {
                 console.log(user);
                 return(
