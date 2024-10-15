@@ -1,6 +1,8 @@
 import {useEffect, useState} from "react";
 import type {Schema} from "../amplify/data/resource";
 import {generateClient} from "aws-amplify/data";
+import {Authenticator} from "@aws-amplify/ui-react";
+import '@aws-amplify/ui-react/styles.css';
 
 const client = generateClient<Schema>();
 
@@ -126,131 +128,170 @@ function App() {
 
 
     return (
-        <main>
-            <h1>My todos</h1>
-            <button onClick={() => setDisplayForm(true)}>+ new todo</button>
-            <ul>
-                {todosWithTags.map((todo) => (
-                    <li key={todo.id}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '12px'
-                        }}>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-                                <input type="checkbox" checked={todo.isDone ?? false}
-                                       onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
-                                />
-                                <span>{todo.content}</span>
-                                {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
-                            </div>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                                <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                                <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
-                            </div>
-                        </div>
-                        <div style={{display: 'flex', gap: '4px'}}>{todo.tagsNames.map((tag: string) => (
-                            <span style={{color: '#e43d3d', backgroundColor:'#f9dddd', padding:'2px 4px', borderRadius:'4px'}}>{tag}</span>))}</div>
-                    </li>
-                ))}
-            </ul>
-            <h2>My tags</h2>
-            <button onClick={createTag}>+ new tag</button>
-            <ul>
-                {tags.map((tag) => (
-                    <li key={tag.id}>
-                        {tag.name}
-                    </li>
-                ))}
-            </ul>
-            <div>
-                🥳 App successfully hosted. Try creating a new todo.
-                <br/>
-                <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-                    Review next step of this tutorial.
-                </a>
-                <div>{sayHelloResponse}</div>
-            </div>
-            {
-                displayForm && (
-                    <div style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 10,
-                        width: "100wv",
-                        height: "100vh",
-                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}>
-                        <div style={{
-                            backgroundColor: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
-                            padding: '12px',
-                            borderRadius: '10px',
-                            position: 'relative',
-                        }}>
-                            <button style={{
-                                color: 'white',
-                                borderRadius: '10px',
-                                width: '20px',
-                                height: '20px',
-                                padding: '0',
+        <Authenticator
+            signUpAttributes={['email', 'preferred_username']}
+            formFields={{
+                signUp: {
+                    preferred_username: {
+                        label: 'Username', // Remplace "Preferred Username" par "Username"
+                        placeholder: 'Enter your username', // Personnalise le placeholder
+                        isRequired: true,
+                    }
+                }
+            }}
+        >
+            {({signOut, user}) => {
+                console.log(user);
+                return(
+                <main>
+                    <div>Hello {user?.username}</div>
+                    <button onClick={signOut}>Sign out</button>
+                    <h1>My todos</h1>
+                    <button onClick={() => setDisplayForm(true)}>+ new todo</button>
+                    <ul>
+                        {todosWithTags.map((todo) => (
+                            <li key={todo.id}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '12px'
+                                }}>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                        <input type="checkbox" checked={todo.isDone ?? false}
+                                               onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
+                                        />
+                                        <span>{todo.content}</span>
+                                        {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
+                                    </div>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                        <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                                        <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex', gap: '4px'}}>{todo.tagsNames.map((tag: string) => (
+                                    <span style={{
+                                        color: '#e43d3d',
+                                        border: '2px solid #e43d3d',
+                                        padding: '2px 4px',
+                                        borderRadius: '8px'
+                                    }}>
+                                {tag}
+                            </span>))}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    <h2>My tags</h2>
+                    <button onClick={createTag}>+ new tag</button>
+                    <ul>
+                        {tags.map((tag) => (
+                            <li key={tag.id}>
+                                {tag.name}
+                            </li>
+                        ))}
+                    </ul>
+                    <div>
+                        🥳 App successfully hosted. Try creating a new todo.
+                        <br/>
+                        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
+                            Review next step of this tutorial.
+                        </a>
+                        <div>{sayHelloResponse}</div>
+                    </div>
+                    {
+                        displayForm && (
+                            <div style={{
                                 position: "absolute",
-                                top: '5px',
-                                right: '5px',
-                                fontSize: '12px'
-                            }}
-                                    onClick={() => setDisplayForm(false)}>X
-                            </button>
-                            <h3>Create todo</h3>
-                            <form onSubmit={handleSubmit} style={{
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                zIndex: 10,
+                                width: "100wv",
+                                height: "100vh",
+                                backgroundColor: 'rgba(0, 0, 0, 0.6)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                flexDirection: 'column',
-                                gap: '12px'
                             }}>
-                                <div>
-                                    <label htmlFor="content">
-                                        <input type="text" id="content" name="content" placeholder={'Enter todo content'}
-                                               required/>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label htmlFor="tags" style={{
+                                <div style={{
+                                    backgroundColor: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column',
+                                    padding: '24px',
+                                    borderRadius: '10px',
+                                    position: 'relative',
+                                }}>
+                                    <button style={{
+                                        color: 'white',
+                                        borderRadius: '10px',
+                                        width: '20px',
+                                        height: '20px',
+                                        padding: '0',
+                                        position: "absolute",
+                                        top: '5px',
+                                        right: '5px',
+                                        fontSize: '12px'
+                                    }}
+                                            onClick={() => setDisplayForm(false)}>X
+                                    </button>
+                                    <h3>Create todo</h3>
+                                    <form onSubmit={handleSubmit} style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         flexDirection: 'column',
                                         gap: '12px'
                                     }}>
-                                        Select tag
-                                        <select name="tags" id="tags" multiple>
-                                            {tags.map((tag) => (
-                                                <option key={tag.id} value={tag.id}>
-                                                    {tag.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
+                                        <div>
+                                            <label htmlFor="content">
+                                                <input type="text" id="content" name="content"
+                                                       placeholder={'Enter todo content'}
+                                                       required/>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexDirection: 'column',
+                                                gap: '12px'
+                                            }}>
+                                                <h4>Select tag : </h4>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '12px'
+                                                }}>
+                                                    {tags.map((tag) => (
+                                                        <div key={tag.id}>
+                                                            <input
+                                                                type="checkbox"
+                                                                id={tag.id}
+                                                                name="tags"
+                                                                value={tag.id}
+                                                            />
+                                                            <label htmlFor={tag.id}>{tag.name}</label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type={"submit"}>Create</button>
+                                    </form>
                                 </div>
-                                <button type={"submit"}>Create</button>
-                            </form>
-                        </div>
 
-                    </div>
-                )
-            }
-        </main>
+                            </div>
+                        )
+                    }
+                </main>)
+            }}
+        </Authenticator>
     );
 }
 
