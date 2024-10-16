@@ -3,6 +3,7 @@ import type {Schema} from "../amplify/data/resource";
 import {generateClient} from "aws-amplify/data";
 import {Authenticator} from "@aws-amplify/ui-react";
 import '@aws-amplify/ui-react/styles.css';
+import {fetchUserAttributes} from 'aws-amplify/auth';
 
 const client = generateClient<Schema>();
 
@@ -12,10 +13,7 @@ function App() {
     const [displayForm, setDisplayForm] = useState<boolean>(false);
     const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null);
     const [todosWithTags, setTodosWithTags] = useState<any[]>([]);
-
-    console.log("todos ", todos)
-    console.log("tags ", tags)
-    console.log("todosWithTags ", todosWithTags)
+    const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         // A chaque changement dans les données on met à jour les todos
@@ -126,159 +124,239 @@ function App() {
         fetchSayHello();
     }, []);
 
+    useEffect(() => {
+        async function fetchUser() {
+            const user = await fetchUserAttributes();
+            console.log(user)
+            if (user) {
+                setCurrentUser(user?.preferred_username);
+            }
+        }
+
+        fetchUser();
+    }, []);
 
     return (
-        <Authenticator>
-            {({signOut, user}) => {
-                console.log(user);
-                return(
-                <main>
-                    <div>Hello {user?.username}</div>
-                    <button onClick={signOut}>Sign out</button>
-                    <h1>My todos</h1>
-                    <button onClick={() => setDisplayForm(true)}>+ new todo</button>
-                    <ul>
-                        {todosWithTags.map((todo) => (
-                            <li key={todo.id}>
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: '12px'
-                                }}>
-                                    <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-                                        <input type="checkbox" checked={todo.isDone ?? false}
-                                               onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
-                                        />
-                                        <span>{todo.content}</span>
-                                        {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
-                                    </div>
-                                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                                        <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                                        <button onClick={() => updateTodo(todo.id, todo.content || '')}>Update</button>
-                                    </div>
-                                </div>
-                                <div style={{display: 'flex', gap: '4px'}}>{todo.tagsNames.map((tag: string) => (
-                                    <span style={{
-                                        color: '#e43d3d',
-                                        border: '2px solid #e43d3d',
-                                        padding: '2px 4px',
-                                        borderRadius: '8px'
-                                    }}>
-                                {tag}
-                            </span>))}
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                    <h2>My tags</h2>
-                    <button onClick={createTag}>+ new tag</button>
-                    <ul>
-                        {tags.map((tag) => (
-                            <li key={tag.id}>
-                                {tag.name}
-                            </li>
-                        ))}
-                    </ul>
-                    <div>
-                        🥳 App successfully hosted. Try creating a new todo.
-                        <br/>
-                        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-                            Review next step of this tutorial.
-                        </a>
-                        <div>{sayHelloResponse}</div>
-                    </div>
-                    {
-                        displayForm && (
+        <Authenticator
+            signUpAttributes={['email', 'preferred_username']}
+            formFields={{
+                signUp: {
+                    preferred_username: {
+                        label: 'Username',
+                        placeholder: 'Enter your username',
+                        isRequired: true,
+                    }
+                }
+            }}
+        >
+            {({signOut}) => {
+                return (<>
+                        <div style={{
+                            position: "absolute",
+                            top: '40px',
+                            right: '10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <div>Hello {currentUser}</div>
+                            <button onClick={signOut}>Sign out</button>
+                        </div>
+                        <main>
+                            <div>
+                                <div>{sayHelloResponse}</div>
+
+                                🥳 App successfully hosted. Try creating a new todo.
+                                <br/>
+                                <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
+                                    Review next step of this tutorial.
+                                </a>
+                            </div>
                             <div style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                zIndex: 10,
-                                width: "100wv",
-                                height: "100vh",
-                                backgroundColor: 'rgba(0, 0, 0, 0.6)',
                                 display: 'flex',
-                                alignItems: 'center',
+                                alignItems: 'start',
                                 justifyContent: 'center',
-                            }}>
+                                gap: '10vw'
+                            }}
+                            >
                                 <div style={{
-                                    backgroundColor: 'white',
                                     display: 'flex',
+                                    flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                }}
+                                >
+                                    <h1>My todos</h1>
+                                    <button onClick={() => setDisplayForm(true)}>+ new todo</button>
+                                    <ul>
+                                        {todosWithTags.map((todo) => (
+                                            <li key={todo.id}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    gap: '12px'
+                                                }}>
+                                                    <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                                        <input type="checkbox" checked={todo.isDone ?? false}
+                                                               onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
+                                                        />
+                                                        <span>{todo.content}</span>
+                                                        {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
+                                                    </div>
+                                                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                                        <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+                                                        <button
+                                                            onClick={() => updateTodo(todo.id, todo.content || '')}>Update
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        gap: '4px'
+                                                    }}
+                                                >
+                                                    {todo.tagsNames.map((tag: string) => (
+                                                        <div key={tag}
+                                                             style={{
+                                                                 color: '#e43d3d',
+                                                                 border: '2px solid #e43d3d',
+                                                                 padding: '2px 4px',
+                                                                 borderRadius: '8px',
+                                                             }}
+                                                        >
+                                                            {tag}
+                                                            {/*<div style={{*/}
+                                                            {/*    display: 'flex',*/}
+                                                            {/*    alignItems: 'center',*/}
+                                                            {/*    gap: '12px'*/}
+                                                            {/*}}*/}
+                                                            {/*>*/}
+                                                            {/*    <button onClick={() => deleteTodo(tag.id)}>Delete</button>*/}
+                                                            {/*    <button*/}
+                                                            {/*        onClick={() => updateTodo(tag.id, tag.name || '')}>Update*/}
+                                                            {/*    </button>*/}
+                                                            {/*</div>*/}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div style={{
+                                    display: 'flex',
                                     flexDirection: 'column',
-                                    padding: '24px',
-                                    borderRadius: '10px',
-                                    position: 'relative',
-                                }}>
-                                    <button style={{
-                                        color: 'white',
-                                        borderRadius: '10px',
-                                        width: '20px',
-                                        height: '20px',
-                                        padding: '0',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                                >
+                                    <h1>My tags</h1>
+                                    <button onClick={createTag}>+ new tag</button>
+                                    <ul style={{width: '100%'}}>
+                                        {tags.map((tag) => (
+                                            <li key={tag.id}>
+                                                {tag.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                            {
+                                displayForm && (
+                                    <div style={{
                                         position: "absolute",
-                                        top: '5px',
-                                        right: '5px',
-                                        fontSize: '12px'
-                                    }}
-                                            onClick={() => setDisplayForm(false)}>X
-                                    </button>
-                                    <h3>Create todo</h3>
-                                    <form onSubmit={handleSubmit} style={{
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        zIndex: 10,
+                                        width: "100wv",
+                                        height: "100vh",
+                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        flexDirection: 'column',
-                                        gap: '12px'
                                     }}>
-                                        <div>
-                                            <label htmlFor="content">
-                                                <input type="text" id="content" name="content"
-                                                       placeholder={'Enter todo content'}
-                                                       required/>
-                                            </label>
-                                        </div>
-                                        <div>
-                                            <div style={{
+                                        <div style={{
+                                            backgroundColor: 'white',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexDirection: 'column',
+                                            padding: '24px',
+                                            borderRadius: '10px',
+                                            position: 'relative',
+                                        }}>
+                                            <button style={{
+                                                color: 'white',
+                                                borderRadius: '10px',
+                                                width: '20px',
+                                                height: '20px',
+                                                padding: '0',
+                                                position: "absolute",
+                                                top: '5px',
+                                                right: '5px',
+                                                fontSize: '12px'
+                                            }}
+                                                    onClick={() => setDisplayForm(false)}>X
+                                            </button>
+                                            <h3>Create todo</h3>
+                                            <form onSubmit={handleSubmit} style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 flexDirection: 'column',
                                                 gap: '12px'
                                             }}>
-                                                <h4>Select tag : </h4>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '12px'
-                                                }}>
-                                                    {tags.map((tag) => (
-                                                        <div key={tag.id}>
-                                                            <input
-                                                                type="checkbox"
-                                                                id={tag.id}
-                                                                name="tags"
-                                                                value={tag.id}
-                                                            />
-                                                            <label htmlFor={tag.id}>{tag.name}</label>
-                                                        </div>
-                                                    ))}
+                                                <div>
+                                                    <label htmlFor="content">
+                                                        <input type="text" id="content" name="content"
+                                                               placeholder={'Enter todo content'}
+                                                               required/>
+                                                    </label>
                                                 </div>
-                                            </div>
+                                                <div>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        flexDirection: 'column',
+                                                        gap: '12px'
+                                                    }}>
+                                                        <h4>Select tag : </h4>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '12px'
+                                                        }}>
+                                                            {tags.map((tag) => (
+                                                                <div key={tag.id}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        id={tag.id}
+                                                                        name="tags"
+                                                                        value={tag.id}
+                                                                    />
+                                                                    <label htmlFor={tag.id}>{tag.name}</label>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button type={"submit"}>Create</button>
+                                            </form>
                                         </div>
-                                        <button type={"submit"}>Create</button>
-                                    </form>
-                                </div>
 
-                            </div>
-                        )
-                    }
-                </main>)
+                                    </div>
+                                )
+                            }
+                        </main>
+                    </>
+                )
             }}
         </Authenticator>
     );
