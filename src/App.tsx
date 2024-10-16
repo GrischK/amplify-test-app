@@ -1,10 +1,9 @@
-import {useEffect, useState} from "react";
 import type {Schema} from "../amplify/data/resource";
+import {useEffect, useState} from "react";
+import {fetchUserAttributes} from 'aws-amplify/auth';
 import {generateClient} from "aws-amplify/data";
 import {Authenticator} from "@aws-amplify/ui-react";
 import '@aws-amplify/ui-react/styles.css';
-import {fetchUserAttributes} from 'aws-amplify/auth';
-
 const client = generateClient<Schema>();
 
 function App() {
@@ -15,24 +14,41 @@ function App() {
     const [todosWithTags, setTodosWithTags] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
 
-    console.log('todos',todos)
+    console.log('todos', todos)
 
     useEffect(() => {
-        // A chaque changement dans les données on met à jour les todos
-        const todoSub = client.models.Todo.observeQuery().subscribe({
-            next: (data) => setTodos([...data.items]),
-        });
+        let todoSub: any;
+        let tagSub: any;
 
-        const tagSub = client.models.Tag.observeQuery().subscribe({
-            next: (data) => setTags([...data.items]),
-        });
+        async function fetchData() {
+            const user = await fetchUserAttributes();
+            if (user) {
+                setCurrentUser(user?.preferred_username);
+            }
+            console.log(user);
+
+            if (user?.sub) {
+                // A chaque changement dans les données on met à jour les todos
+                todoSub = client.models.Todo.observeQuery({
+                    filter: {owner: {contains: user.sub}}
+                }).subscribe({
+                    next: (data) => setTodos([...data.items]),
+                });
+            }
+
+            // Mise à jour les tags
+            tagSub = client.models.Tag.observeQuery().subscribe({
+                next: (data) => setTags([...data.items]),
+            });
+        }
+
+        fetchData();
 
         // On se désabonne de l'observation lorsque le composant est démonté pour éviter les effets de bord
         return () => {
-            todoSub.unsubscribe();
-            tagSub.unsubscribe()
+            todoSub?.unsubscribe();
+            tagSub?.unsubscribe();
         };
-
     }, []);
 
     useEffect(() => {
@@ -151,18 +167,6 @@ function App() {
         fetchSayHello();
     }, []);
 
-    useEffect(() => {
-        async function fetchUser() {
-            const user = await fetchUserAttributes();
-            if (user) {
-                setCurrentUser(user?.preferred_username);
-            }
-            console.log('user',user)
-        }
-
-        fetchUser();
-    }, []);
-
     return (
         <Authenticator
             signUpAttributes={['email', 'preferred_username']}
@@ -188,7 +192,9 @@ function App() {
                             justifyContent: 'center'
                         }}>
                             <div>Hello {currentUser}</div>
-                            <button onClick={signOut}>Sign out</button>
+                            <button onClick={signOut} className='signOutBtn'>
+                                Sign out
+                            </button>
                         </div>
                         <main>
                             <div>
@@ -248,7 +254,7 @@ function App() {
                                                     {todo.tags.map((tag: any) => (
                                                         <div key={tag.id}
                                                              style={{
-                                                                 backgroundColor:'#eceffd',
+                                                                 backgroundColor: '#eceffd',
                                                                  color: '#3d53e4',
                                                                  border: '2px solid #3d53e4',
                                                                  padding: '2px 4px',
