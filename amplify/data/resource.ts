@@ -14,7 +14,9 @@ const schema = a.schema({
             isDone: a.boolean().default(false),
             tags: a.hasMany('TodoTag', 'todoId'),
             owner: a.string(),
-        }).authorization(allow => [allow.owner().to(['create', 'read', 'update', 'delete'])])
+        })
+        .authorization(allow => [allow.owner().to(['create', 'read', 'update', 'delete']), allow.publicApiKey().to(['read'])
+        ])
     ,
     Tag: a
         .model({

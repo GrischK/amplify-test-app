@@ -14,7 +14,9 @@ function App() {
     const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null);
     const [todosWithTags, setTodosWithTags] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
-    console.log(todosWithTags)
+
+    console.log('todos',todos)
+
     useEffect(() => {
         // A chaque changement dans les données on met à jour les todos
         const todoSub = client.models.Todo.observeQuery().subscribe({
@@ -53,7 +55,6 @@ function App() {
 
         fetchTodosWithTags();
     }, [todos, tags]);
-    console.log(currentUser);
 
     function createTodo(formData: FormData) {
         const todoData = {
@@ -153,10 +154,10 @@ function App() {
     useEffect(() => {
         async function fetchUser() {
             const user = await fetchUserAttributes();
-            console.log(user)
             if (user) {
                 setCurrentUser(user?.preferred_username);
             }
+            console.log('user',user)
         }
 
         fetchUser();
