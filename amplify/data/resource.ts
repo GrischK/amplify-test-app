@@ -9,7 +9,7 @@ const schema = a.schema({
             tags: a.hasMany('TodoTag', 'todoId'),
             owner: a.string(),
         })
-        .authorization(allow => [allow.owner()])
+        .authorization(allow => [allow.ownerDefinedIn('owner')])
     ,
     Tag: a
         .model({
