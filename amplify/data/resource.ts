@@ -13,7 +13,7 @@ const schema = a.schema({
             content: a.string(),
             isDone: a.boolean().default(false),
             tags: a.hasMany('TodoTag', 'todoId')
-        })
+        }).authorization(allow => [allow.owner()])
     ,
     Tag: a
         .model({
@@ -23,11 +23,11 @@ const schema = a.schema({
     ,
     TodoTag: a
         .model({
-        todoId: a.id().required(),
-        tagId: a.id().required(),
-        todo: a.belongsTo('Todo', 'todoId'),
-        tag: a.belongsTo('Tag', 'tagId'),
-    })
+            todoId: a.id().required(),
+            tagId: a.id().required(),
+            todo: a.belongsTo('Todo', 'todoId'),
+            tag: a.belongsTo('Tag', 'tagId'),
+        })
     ,
     sayHello: a
         .query()

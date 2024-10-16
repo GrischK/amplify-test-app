@@ -14,7 +14,7 @@ function App() {
     const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null);
     const [todosWithTags, setTodosWithTags] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
-
+    console.log(todosWithTags)
     useEffect(() => {
         // A chaque changement dans les données on met à jour les todos
         const todoSub = client.models.Todo.observeQuery().subscribe({
@@ -40,19 +40,19 @@ function App() {
                 const tagsId = todoTags.data.map((todoTag) => todoTag.tagId);
 
                 // Récupération des noms des tags associés
-                const tagsNames = await Promise.all(tagsId.map(async (id) => {
+                const tags = await Promise.all(tagsId.map(async (id) => {
                     const tag = await client.models.Tag.get({id: id});
-                    return tag.data?.name; // Récupération du nom du tag
+                    return tag.data; // Récupération du nom du tag
                 }));
 
-                return {...todo, tagsNames};
+                return {...todo, tags};
             }));
 
             setTodosWithTags(todosWithTagsData);
         }
 
         fetchTodosWithTags();
-    }, [todos]);
+    }, [todos, tags]);
 
 
     function createTodo(formData: FormData) {
@@ -61,7 +61,9 @@ function App() {
             isDone: false
         };
 
-        client.models.Todo.create(todoData).then((createdTodo) => {
+        client.models.Todo.create(todoData, {
+            authMode: 'userPool',
+        }).then((createdTodo) => {
             const todoId = createdTodo.data?.id;
 
             const selectedTags = formData.getAll('tags') as Array<string>;
@@ -104,6 +106,30 @@ function App() {
         const updatedContent = window.prompt("Update Todo content", currentContent);
         if (updatedContent) {
             client.models.Todo.update({id, content: updatedContent});
+        }
+    }
+
+    function deleteTag(id: string) {
+        client.models.TodoTag.list({
+            filter: {tagId: {eq: id}}
+        }).then(({data}) => {
+            const todoTagDeletions = data.map((todoTag) => {
+                return client.models.TodoTag.delete({id: todoTag.id});
+            });
+            Promise.all(todoTagDeletions).then(() => {
+                client.models.Tag.delete({id});
+            }).catch((error) => {
+                console.error("Erreur lors de la suppression des relations TodoTag :", error);
+            });
+        }).catch((error) => {
+            console.error("Erreur lors de la récupération des relations TodoTag :", error);
+        });
+    }
+
+    function updateTag(id: string, currentName: string) {
+        const updatedContent = window.prompt("Update Tag name", currentName);
+        if (updatedContent) {
+            client.models.Tag.update({id, name: updatedContent});
         }
     }
 
@@ -177,14 +203,14 @@ function App() {
                                 display: 'flex',
                                 alignItems: 'start',
                                 justifyContent: 'center',
-                                gap: '10vw'
+                                gap: '10vw',
                             }}
                             >
                                 <div style={{
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
-                                    justifyContent: 'center',
+                                    justifyContent: 'center'
                                 }}
                                 >
                                     <h1>My todos</h1>
@@ -218,27 +244,17 @@ function App() {
                                                         gap: '4px'
                                                     }}
                                                 >
-                                                    {todo.tagsNames.map((tag: string) => (
-                                                        <div key={tag}
+                                                    {todo.tags.map((tag: any) => (
+                                                        <div key={tag.id}
                                                              style={{
-                                                                 color: '#e43d3d',
-                                                                 border: '2px solid #e43d3d',
+                                                                 backgroundColor:'#eceffd',
+                                                                 color: '#3d53e4',
+                                                                 border: '2px solid #3d53e4',
                                                                  padding: '2px 4px',
                                                                  borderRadius: '8px',
                                                              }}
                                                         >
-                                                            {tag}
-                                                            {/*<div style={{*/}
-                                                            {/*    display: 'flex',*/}
-                                                            {/*    alignItems: 'center',*/}
-                                                            {/*    gap: '12px'*/}
-                                                            {/*}}*/}
-                                                            {/*>*/}
-                                                            {/*    <button onClick={() => deleteTodo(tag.id)}>Delete</button>*/}
-                                                            {/*    <button*/}
-                                                            {/*        onClick={() => updateTodo(tag.id, tag.name || '')}>Update*/}
-                                                            {/*    </button>*/}
-                                                            {/*</div>*/}
+                                                            {tag.name}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -259,6 +275,17 @@ function App() {
                                         {tags.map((tag) => (
                                             <li key={tag.id}>
                                                 {tag.name}
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px'
+                                                }}
+                                                >
+                                                    <button onClick={() => deleteTag(tag.id)}>Delete</button>
+                                                    <button
+                                                        onClick={() => updateTag(tag.id, tag.name || '')}>Update
+                                                    </button>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>
@@ -273,8 +300,8 @@ function App() {
                                         right: 0,
                                         bottom: 0,
                                         zIndex: 10,
-                                        width: "100wv",
-                                        height: "100vh",
+                                        width: "100%",
+                                        height: "100%",
                                         backgroundColor: 'rgba(0, 0, 0, 0.6)',
                                         display: 'flex',
                                         alignItems: 'center',
