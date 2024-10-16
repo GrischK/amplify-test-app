@@ -4,6 +4,7 @@ import {fetchUserAttributes} from 'aws-amplify/auth';
 import {generateClient} from "aws-amplify/data";
 import {Authenticator} from "@aws-amplify/ui-react";
 import '@aws-amplify/ui-react/styles.css';
+
 const client = generateClient<Schema>();
 
 function App() {
@@ -13,19 +14,27 @@ function App() {
     const [sayHelloResponse, setSayHelloResponse] = useState<string | null>(null);
     const [todosWithTags, setTodosWithTags] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
+    const [connectedUser, setConnectedUser] = useState<any>(undefined)
 
-    console.log('todos', todos)
+    useEffect(() => () => {
+        setCurrentUser(undefined)
+    }, []);
 
     useEffect(() => {
+        async function fetchDataUser() {
+            const user = await fetchUserAttributes();
+            if (user) {
+                setCurrentUser(user?.preferred_username);
+            }
+        }
+
+        fetchDataUser();
+
         let todoSub: any;
         let tagSub: any;
 
         async function fetchData() {
             const user = await fetchUserAttributes();
-            if (user) {
-                setCurrentUser(user?.preferred_username);
-            }
-            console.log(user);
 
             if (user?.sub) {
                 // A chaque changement dans les données on met à jour les todos
@@ -49,7 +58,7 @@ function App() {
             todoSub?.unsubscribe();
             tagSub?.unsubscribe();
         };
-    }, []);
+    }, [connectedUser]);
 
     useEffect(() => {
         async function fetchTodosWithTags() {
@@ -180,7 +189,8 @@ function App() {
                 }
             }}
         >
-            {({signOut}) => {
+            {({signOut, user}) => {
+                setConnectedUser(user)
                 return (<>
                         <div style={{
                             position: "absolute",
