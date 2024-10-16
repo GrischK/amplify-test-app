@@ -13,8 +13,8 @@ const schema = a.schema({
             content: a.string(),
             isDone: a.boolean().default(false),
             tags: a.hasMany('TodoTag', 'todoId'),
-            owner: a.string().authorization(allow => [allow.owner().to(['create', 'read', 'update', 'delete'])]),
-        }).authorization(allow => [allow.owner()])
+            owner: a.string(),
+        }).authorization(allow => [allow.owner().to(['create', 'read', 'update', 'delete'])])
     ,
     Tag: a
         .model({

@@ -53,7 +53,7 @@ function App() {
 
         fetchTodosWithTags();
     }, [todos, tags]);
-
+    console.log(currentUser);
 
     function createTodo(formData: FormData) {
         const todoData = {
