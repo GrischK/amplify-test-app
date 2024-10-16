@@ -12,7 +12,8 @@ const schema = a.schema({
         .model({
             content: a.string(),
             isDone: a.boolean().default(false),
-            tags: a.hasMany('TodoTag', 'todoId')
+            tags: a.hasMany('TodoTag', 'todoId'),
+            owner: a.string().authorization(allow => [allow.owner().to(['create', 'read', 'update', 'delete'])]),
         }).authorization(allow => [allow.owner()])
     ,
     Tag: a
