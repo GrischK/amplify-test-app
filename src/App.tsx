@@ -24,7 +24,6 @@ function App() {
         async function fetchDataUser() {
             const user = await fetchUserAttributes();
             if (user) {
-                console.log(user)
                 setCurrentUser(user?.preferred_username);
             }
         }
@@ -48,7 +47,7 @@ function App() {
 
             // Mise à jour les tags
             tagSub = client.models.Tag.observeQuery(
-                {authMode:"apiKey"}
+                {authMode: "apiKey"}
             ).subscribe({
                 next: (data) => setTags([...data.items]),
             });
@@ -66,15 +65,16 @@ function App() {
     useEffect(() => {
         async function fetchTodosWithTags() {
             const todosWithTagsData = await Promise.all(todos.map(async (todo) => {
-                const todoTags = await client.models.TodoTag.list({filter: {todoId: {eq: todo.id}}});
+                const todoTags = await client.models.TodoTag.list({
+                    filter: {todoId: {eq: todo.id}},
+                    authMode: "apiKey"
+                });
                 const tagsId = todoTags.data.map((todoTag) => todoTag.tagId);
-
                 // Récupération des noms des tags associés
                 const tags = await Promise.all(tagsId.map(async (id) => {
-                    const tag = await client.models.Tag.get({id: id});
+                    const tag = await client.models.Tag.get({id: id}, {authMode: "apiKey"});
                     return tag.data; // Récupération du nom du tag
                 }));
-
                 return {...todo, tags};
             }));
 
@@ -101,7 +101,7 @@ function App() {
                 client.models.TodoTag.create({
                     todoId: todoId!,
                     tagId: tagId
-                });
+                }, {authMode: 'apiKey'});
             });
         });
     }
@@ -116,10 +116,11 @@ function App() {
 
     function deleteTodo(id: string) {
         client.models.TodoTag.list({
-            filter: {todoId: {eq: id}}
+            filter: {todoId: {eq: id}},
+            authMode: 'apiKey'
         }).then(({data}) => {
             const todoTagDeletions = data.map((todoTag) => {
-                return client.models.TodoTag.delete({id: todoTag.id});
+                return client.models.TodoTag.delete({id: todoTag.id},{ authMode: 'apiKey'});
             });
             Promise.all(todoTagDeletions).then(() => {
                 client.models.Todo.delete({id});
