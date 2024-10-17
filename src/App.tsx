@@ -4,6 +4,15 @@ import {fetchUserAttributes} from 'aws-amplify/auth';
 import {generateClient} from "aws-amplify/data";
 import {Authenticator} from "@aws-amplify/ui-react";
 import '@aws-amplify/ui-react/styles.css';
+import {
+    createTag,
+    createTodo,
+    deleteTag,
+    deleteTodo,
+    updateTag,
+    updateTodo,
+    updateTodoIsDone
+} from "./functions/crud.ts";
 
 const client = generateClient<Schema>();
 
@@ -84,93 +93,6 @@ function App() {
         fetchTodosWithTags();
     }, [todos, tags]);
 
-    function createTodo(formData: FormData) {
-        const todoData = {
-            content: formData.get('content')?.toString() || '',
-            isDone: false
-        };
-
-        client.models.Todo.create(todoData, {
-            authMode: 'userPool',
-        }).then((createdTodo) => {
-            const todoId = createdTodo.data?.id;
-
-            const selectedTags = formData.getAll('tags') as Array<string>;
-
-            selectedTags.forEach((tagId) => {
-                client.models.TodoTag.create({
-                    todoId: todoId!,
-                    tagId: tagId
-                }, {authMode: 'apiKey'});
-            });
-        });
-    }
-
-    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-
-        const formData = new FormData(e.currentTarget);
-        createTodo(formData);
-        setDisplayForm(false);
-    }
-
-    function deleteTodo(id: string) {
-        client.models.TodoTag.list({
-            filter: {todoId: {eq: id}},
-            authMode: 'apiKey'
-        }).then(({data}) => {
-            const todoTagDeletions = data.map((todoTag) => {
-                return client.models.TodoTag.delete({id: todoTag.id},{ authMode: 'apiKey'});
-            });
-            Promise.all(todoTagDeletions).then(() => {
-                client.models.Todo.delete({id});
-            }).catch((error) => {
-                console.error("Erreur lors de la suppression des relations TodoTag :", error);
-            });
-        }).catch((error) => {
-            console.error("Erreur lors de la récupération des relations TodoTag :", error);
-        });
-    }
-
-    function updateTodo(id: string, currentContent: string) {
-        const updatedContent = window.prompt("Update Todo content", currentContent);
-        if (updatedContent) {
-            client.models.Todo.update({id, content: updatedContent});
-        }
-    }
-
-    function deleteTag(id: string) {
-        client.models.TodoTag.list({
-            filter: {tagId: {eq: id}}
-        }).then(({data}) => {
-            const todoTagDeletions = data.map((todoTag) => {
-                return client.models.TodoTag.delete({id: todoTag.id});
-            });
-            Promise.all(todoTagDeletions).then(() => {
-                client.models.Tag.delete({id});
-            }).catch((error) => {
-                console.error("Erreur lors de la suppression des relations TodoTag :", error);
-            });
-        }).catch((error) => {
-            console.error("Erreur lors de la récupération des relations TodoTag :", error);
-        });
-    }
-
-    function updateTag(id: string, currentName: string) {
-        const updatedContent = window.prompt("Update Tag name", currentName);
-        if (updatedContent) {
-            client.models.Tag.update({id, name: updatedContent});
-        }
-    }
-
-    function updateTodoIsDone(id: string, currentIsDone: boolean) {
-        client.models.Todo.update({id, isDone: !currentIsDone})
-    }
-
-    function createTag() {
-        client.models.Tag.create({name: window.prompt("Tag name")});
-    }
-
     useEffect(() => {
         async function fetchSayHello() {
             const response = await client.queries.sayHello({name: "Grischka"});
@@ -179,6 +101,14 @@ function App() {
 
         fetchSayHello();
     }, []);
+
+    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+
+        const formData = new FormData(e.currentTarget);
+        createTodo(formData);
+        setDisplayForm(false);
+    }
 
     return (
         <Authenticator
@@ -195,113 +125,77 @@ function App() {
         >
             {({signOut, user}) => {
                 setConnectedUser(user)
-                return (<>
-                        <div style={{
-                            position: "absolute",
-                            top: '40px',
-                            right: '10px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <div>Hello {currentUser}</div>
+                return (
+                    <>
+                        <div className={"page_container"}>
+                            <div>
+                                Hello {currentUser}
+                            </div>
                             <button onClick={signOut} className='signOutBtn'>
                                 Sign out
                             </button>
                         </div>
                         <main>
                             <div>
-                                <div>{sayHelloResponse}</div>
-
+                                <div>
+                                    {sayHelloResponse}
+                                </div>
                                 🥳 App successfully hosted. Try creating a new todo.
                                 <br/>
                                 <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
                                     Review next step of this tutorial.
                                 </a>
                             </div>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'start',
-                                justifyContent: 'center',
-                                gap: '10vw',
-                            }}
-                            >
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                                >
+                            <div className="todosAndTags_wrapper">
+                                <div className="todos_container">
                                     <h1>My todos</h1>
-                                    <button onClick={() => setDisplayForm(true)}>+ new todo</button>
+                                    <button onClick={() => setDisplayForm(true)}>
+                                        + new todo
+                                    </button>
                                     <ul>
                                         {todosWithTags.map((todo) => (
                                             <li key={todo.id}>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    gap: '12px'
-                                                }}>
-                                                    <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-                                                        <input type="checkbox" checked={todo.isDone ?? false}
+                                                <div className="todoList_wrapper">
+                                                    <div className="todoContent_wrapper">
+                                                        <input type="checkbox"
+                                                               checked={todo.isDone ?? false}
                                                                onChange={() => updateTodoIsDone(todo.id, !!todo.isDone)}
                                                         />
-                                                        <span>{todo.content}</span>
-                                                        {/*<span>{todo.tags.map((tag)=>tag.name)}</span>*/}
+                                                        <span>
+                                                            {todo.content}
+                                                        </span>
                                                     </div>
-                                                    <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                                                        <button onClick={() => deleteTodo(todo.id)}>Delete</button>
-                                                        <button
-                                                            onClick={() => updateTodo(todo.id, todo.content || '')}>Update
+                                                    <div className="todoButtons_wrapper">
+                                                        <button onClick={() => deleteTodo(todo.id)}>
+                                                            Delete
+                                                        </button>
+                                                        <button onClick={() => updateTodo(todo.id, todo.content || '')}>
+                                                            Update
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        gap: '4px'
-                                                    }}
-                                                >
+                                                <div className='todosTags_wrapper'>
                                                     {todo.tags.map((tag: any) => (
-                                                        <div key={tag.id}
-                                                             style={{
-                                                                 backgroundColor: '#eceffd',
-                                                                 color: '#3d53e4',
-                                                                 border: '2px solid #3d53e4',
-                                                                 padding: '2px 4px',
-                                                                 borderRadius: '8px',
-                                                             }}
-                                                        >
+                                                        <div key={tag.id} className="tag">
                                                             {tag.name}
-                                                        </div>
-                                                    ))}
+                                                        </div>))}
                                                 </div>
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                                >
-                                    <h1>My tags</h1>
-                                    <button onClick={createTag}>+ new tag</button>
-                                    <ul style={{width: '100%'}}>
+                                <div className="tags_container">
+                                    <h1>
+                                        My tags
+                                    </h1>
+                                    <button onClick={createTag}>
+                                        + new tag
+                                    </button>
+                                    <ul className="tagsList">
                                         {tags.map((tag) => (
                                             <li key={tag.id}>
                                                 {tag.name}
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '12px'
-                                                }}
-                                                >
+                                                <div className="tagsButtons_wrapper">
                                                     <button onClick={() => deleteTag(tag.id)}>Delete</button>
                                                     <button
                                                         onClick={() => updateTag(tag.id, tag.name || '')}>Update
@@ -314,73 +208,31 @@ function App() {
                             </div>
                             {
                                 displayForm && (
-                                    <div style={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        zIndex: 10,
-                                        width: "100%",
-                                        height: "100%",
-                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}>
-                                        <div style={{
-                                            backgroundColor: 'white',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            flexDirection: 'column',
-                                            padding: '24px',
-                                            borderRadius: '10px',
-                                            position: 'relative',
-                                        }}>
-                                            <button style={{
-                                                color: 'white',
-                                                borderRadius: '10px',
-                                                width: '20px',
-                                                height: '20px',
-                                                padding: '0',
-                                                position: "absolute",
-                                                top: '5px',
-                                                right: '5px',
-                                                fontSize: '12px'
-                                            }}
-                                                    onClick={() => setDisplayForm(false)}>X
+                                    <div className="createTodo_form">
+                                        <div className="form_container">
+                                            <button className="closeForm_button"
+                                                    onClick={() => setDisplayForm(false)}
+                                            >
+                                                X
                                             </button>
-                                            <h3>Create todo</h3>
-                                            <form onSubmit={handleSubmit} style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexDirection: 'column',
-                                                gap: '12px'
-                                            }}>
+                                            <h3>
+                                                Create todo
+                                            </h3>
+                                            <form onSubmit={handleSubmit} className="form_wrapper">
                                                 <div>
                                                     <label htmlFor="content">
                                                         <input type="text" id="content" name="content"
                                                                placeholder={'Enter todo content'}
-                                                               required/>
+                                                               required
+                                                        />
                                                     </label>
                                                 </div>
                                                 <div>
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        flexDirection: 'column',
-                                                        gap: '12px'
-                                                    }}>
-                                                        <h4>Select tag : </h4>
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            gap: '12px'
-                                                        }}>
+                                                    <div className="selectTag_container">
+                                                        <h4>
+                                                            Select tag :
+                                                        </h4>
+                                                        <div className="selectTag_wrapper">
                                                             {tags.map((tag) => (
                                                                 <div key={tag.id}>
                                                                     <input
@@ -389,7 +241,9 @@ function App() {
                                                                         name="tags"
                                                                         value={tag.id}
                                                                     />
-                                                                    <label htmlFor={tag.id}>{tag.name}</label>
+                                                                    <label htmlFor={tag.id}>
+                                                                        {tag.name}
+                                                                    </label>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -398,7 +252,6 @@ function App() {
                                                 <button type={"submit"}>Create</button>
                                             </form>
                                         </div>
-
                                     </div>
                                 )
                             }
