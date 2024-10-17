@@ -16,8 +16,6 @@ function App() {
     const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
     const [connectedUser, setConnectedUser] = useState<any>(undefined)
 
-    console.log(currentUser)
-
     useEffect(() => () => {
         setCurrentUser(undefined)
     }, []);
@@ -42,7 +40,7 @@ function App() {
             if (user?.sub) {
                 // A chaque changement dans les données on met à jour les todos
                 todoSub = client.models.Todo.observeQuery({
-                    filter: {owner: {contains: user.sub}}
+                    filter: {owner: {contains: user.sub}}, authMode: "userPool"
                 }).subscribe({
                     next: (data) => setTodos([...data.items]),
                 });
