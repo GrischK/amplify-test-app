@@ -33,7 +33,7 @@ const schema = a.schema({
         .returns(a.string())
         .handler(a.handler.function(sayHello))
     ,
-})
+}).authorization((allow) => [allow.publicApiKey()]);
 // .authorization((allow) => [allow.publicApiKey()]);
 
 export type Schema = ClientSchema<typeof schema>;
