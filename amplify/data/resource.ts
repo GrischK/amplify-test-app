@@ -15,7 +15,7 @@ const schema = a.schema({
         .model({
             name: a.string(),
             todos: a.hasMany('TodoTag', 'tagId')
-        })
+        }).authorization((allow) => [allow.publicApiKey()])
     ,
     TodoTag: a
         .model({
@@ -23,7 +23,7 @@ const schema = a.schema({
             tagId: a.id().required(),
             todo: a.belongsTo('Todo', 'todoId'),
             tag: a.belongsTo('Tag', 'tagId'),
-        })
+        }).authorization((allow) => [allow.publicApiKey()])
     ,
     sayHello: a
         .query()
@@ -33,7 +33,8 @@ const schema = a.schema({
         .returns(a.string())
         .handler(a.handler.function(sayHello))
     ,
-}).authorization((allow) => [allow.publicApiKey()]);
+})
+// .authorization((allow) => [allow.publicApiKey()]);
 
 export type Schema = ClientSchema<typeof schema>;
 

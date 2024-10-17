@@ -16,6 +16,8 @@ function App() {
     const [currentUser, setCurrentUser] = useState<string | undefined>(undefined);
     const [connectedUser, setConnectedUser] = useState<any>(undefined)
 
+    console.log(currentUser)
+
     useEffect(() => () => {
         setCurrentUser(undefined)
     }, []);
@@ -24,6 +26,7 @@ function App() {
         async function fetchDataUser() {
             const user = await fetchUserAttributes();
             if (user) {
+                console.log(user)
                 setCurrentUser(user?.preferred_username);
             }
         }
