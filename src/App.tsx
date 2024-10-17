@@ -40,14 +40,16 @@ function App() {
             if (user?.sub) {
                 // A chaque changement dans les données on met à jour les todos
                 todoSub = client.models.Todo.observeQuery({
-                    filter: {owner: {contains: user.sub}}, authMode: "userPool"
+                    authMode: "userPool"
                 }).subscribe({
                     next: (data) => setTodos([...data.items]),
                 });
             }
 
             // Mise à jour les tags
-            tagSub = client.models.Tag.observeQuery().subscribe({
+            tagSub = client.models.Tag.observeQuery(
+                {authMode:"apiKey"}
+            ).subscribe({
                 next: (data) => setTags([...data.items]),
             });
         }
